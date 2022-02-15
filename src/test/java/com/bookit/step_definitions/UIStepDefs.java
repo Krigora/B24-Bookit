@@ -7,6 +7,9 @@ import com.bookit.utilities.Environment;
 import io.cucumber.java.en.Given;
 import io.cucumber.java.en.Then;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.equalTo;
+
 public class UIStepDefs {
 
     @Given("User logged in to Bookit app as teacher role")
@@ -20,6 +23,7 @@ public class UIStepDefs {
     public void user_is_on_self_page() {
         HomePage homePage = new HomePage();
         homePage.gotoSelf();
+
 
 
 
