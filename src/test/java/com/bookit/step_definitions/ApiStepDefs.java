@@ -1,8 +1,8 @@
 package com.bookit.step_definitions;
 
 import com.bookit.pages.SelfPage;
-import com.bookit.utilities.BookItApiUtil;
-import com.bookit.utilities.Environment;
+import com.bookit.utilities.*;
+import com.sun.javafx.collections.MappingChange;
 import io.cucumber.java.en.And;
 import io.cucumber.java.en.Given;
 import io.cucumber.java.en.Then;
@@ -25,6 +25,7 @@ public class ApiStepDefs {
 
     String accessToken;
     Response response;
+    Map<String,String> newRecordMap;
 
     @Given("User logged in to Bookit api as teacher role")
     public void user_logged_in_to_Bookit_api_as_teacher_role() {
@@ -65,7 +66,9 @@ public class ApiStepDefs {
     }
 
     /**
-     *
+     "entryiId": 1766,
+     * "entryType": "Student",
+     * "message": "user harold finch has been added to database."
      */
     @Then("User should see same info on UI and API")
     public void user_should_see_same_info_on_UI_and_API() {
@@ -87,11 +90,11 @@ public class ApiStepDefs {
     }
 
     @When("Users sends POST request to {string} with following info:")
-    public void usersSendsPOSTRequestToWithFollowingInfo(String endpoint, Map<String, String> newStudentInfo) {
-
+    public void usersSendsPOSTRequestToWithFollowingInfo(String endpoint, Map<String, String> newEntryInfo) {
+newRecordMap = newEntryInfo; //assing the query map to newRecordMap
         response = given().accept(ContentType.JSON)
                 .and().header("Authorization", accessToken)
-                .and().queryParams(newStudentInfo).log().all()
+                .and().queryParams(newEntryInfo).log().all()
                 .when().post(Environment.BASE_URL + endpoint);
         response.prettyPrint();
 
@@ -100,18 +103,51 @@ public class ApiStepDefs {
     @And("User deletes previously created student")
     public void userDeletesPreviouslyCreatedStudent() {
 
-
         int studentId = response.path(("entryiId"));
-        given().accept(ContentType.JSON)
+        given().accept(ContentType.JSON).log().all()
                 .and().header("Authorization", accessToken)
                 .when().delete(Environment.BASE_URL+ "/api/students/" + studentId)
                 .then().assertThat().statusCode(204);
 
     }
+
+    @And("User sends GET request to {string} with {string}")
+    public void userSendsGETRequestToWith(String endpoint, String teamId) {
+        response = given().accept(ContentType.JSON)
+                .and().header("Authorization", accessToken)
+                .and().pathParam("id", teamId).log().all()
+                .when().get(Environment.BASE_URL + endpoint); //api/teams/11267
+
+    }
+
+    @And("Team name should be {string} in response")
+    public void teamNameShouldBeInResponse(String expTeamName) {
+        response.prettyPrint();
+        assertThat(response.path("name"), equalTo(expTeamName));
+        
+    }
+
+    @And("Database query  should have samewith {string} and {string}")
+    public void databaseQueryShouldHaveSamewithAnd(String teamId, String teamName) {
+        String sql = "SELECT id, name FROM team WHERE id =" + teamId;
+
+        Map<String, Object> dbTeamInfo =   DBUtils.getRowMap(sql);
+        assertThat(dbTeamInfo.get("id"), equalTo(Long.parseLong(teamId)));
+        assertThat(dbTeamInfo.get("name"), equalTo(teamName));
+    }
+
+
+    @And("Database should persist same team info")
+    public void databaseShouldPersistSameTeamInfo() {
+        int newTeamID = response.path("entryiId");
+        String sql = "SELECT * FROM team WHERE id = " + newTeamID;
+        Map<String, Object> dbNewTeamMap = DBUtils.getRowMap(sql);
+
+        System.out.println("sql = " + sql);
+        System.out.println("dbNewTeamMap = " + dbNewTeamMap);
+
+        assertThat(dbNewTeamMap.get("id"), equalTo((long)newTeamID));
+        assertThat(dbNewTeamMap.get("name"), equalTo(newRecordMap.get("team-name")));
+        assertThat(dbNewTeamMap.get("batch_number").toString(), equalTo(newRecordMap.get("batch-number")));
+    }
 }
-/**
- * "entryiId": 1766,
- * "entryType": "Student",
- * "message": "user harold finch has been added to database."
- * }
- */
