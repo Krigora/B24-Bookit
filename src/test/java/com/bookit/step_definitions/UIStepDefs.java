@@ -1,31 +1,78 @@
 package com.bookit.step_definitions;
 
 import com.bookit.pages.HomePage;
+import com.bookit.pages.HuntPage;
 import com.bookit.pages.LoginPage;
+
+import com.bookit.pages.SpotsPage;
+import com.bookit.utilities.BrowserUtils;
 import com.bookit.utilities.Driver;
 import com.bookit.utilities.Environment;
 import io.cucumber.java.en.Given;
 import io.cucumber.java.en.Then;
+import io.cucumber.java.en.When;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.equalTo;
+import org.openqa.selenium.support.ui.ExpectedConditions;
+import org.openqa.selenium.support.ui.WebDriverWait;
+
+import java.util.List;
+import java.util.Map;
+
+import static org.junit.Assert.*;
+
+
 
 public class UIStepDefs {
+
+    HomePage homePage = new HomePage();
+HuntPage huntPage = new HuntPage();
+SpotsPage spotsPage = new SpotsPage();
 
     @Given("User logged in to Bookit app as teacher role")
     public void user_logged_in_to_Bookit_app_as_teacher_role() {
         Driver.getDriver().get(Environment.URL);
-        LoginPage loginPage=new LoginPage();
+        LoginPage loginPage = new LoginPage();
         loginPage.login(Environment.TEACHER_EMAIL, Environment.TEACHER_PASSWORD);
     }
 
     @Given("User is on self page")
     public void user_is_on_self_page() {
-        HomePage homePage = new HomePage();
+
         homePage.gotoSelf();
 
+    }
 
 
+    @Given("User logged in to Bookit app as team lead role")
+    public void user_logged_in_to_Bookit_app_as_team_lead_role() {
+        Driver.getDriver().get(Environment.URL);
+        LoginPage loginPage = new LoginPage();
+        loginPage.login(Environment.LEADER_EMAIL, Environment.LEADER_PASSWORD);
+//exclicitly wait for the url to change to /map
+        WebDriverWait wait = new WebDriverWait(Driver.getDriver(), 10);
+        wait.until(ExpectedConditions.urlContains("map"));
+        assertTrue(Driver.getDriver().getCurrentUrl().endsWith("map"));
+    }
 
+    @When("User goes to room hunt page")
+    public void user_goes_to_room_hunt_page() {
+        homePage.hunt.click();
+    }
+
+    @When("User searches for room with date:")
+    public void user_searches_for_room_with_date(Map<String, String> dateInfo) {
+        huntPage.dateField.sendKeys(dateInfo.get("date"));
+        huntPage.selectStartTime(dateInfo.get("from"));
+
+        huntPage.selectFinishTime(dateInfo.get("to"));
+        huntPage.submitBtn.click();
+    }
+
+    @Then("User should see available rooms")
+    public void user_should_see_available_rooms() {
+        BrowserUtils.waitFor(2);
+        List<String> availableRooms = BrowserUtils.getElementsText(spotsPage.roomsName);
+        System.out.println("availableRooms = " + availableRooms);
+        assertEquals(7, availableRooms.size());
     }
 }
