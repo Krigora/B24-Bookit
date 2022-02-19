@@ -1,4 +1,4 @@
-@ui @zip
+@ui @zip @Smoke
 Feature: USPS Zipcode look up UI and API validation
 
   Scenario: User should see same city for API and UI zipcode lookup

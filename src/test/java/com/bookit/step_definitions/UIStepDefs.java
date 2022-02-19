@@ -21,12 +21,12 @@ import java.util.Map;
 import static org.junit.Assert.*;
 
 
-
 public class UIStepDefs {
 
     HomePage homePage = new HomePage();
-HuntPage huntPage = new HuntPage();
-SpotsPage spotsPage = new SpotsPage();
+    HuntPage huntPage = new HuntPage();
+    SpotsPage spotsPage = new SpotsPage();
+    static List<String> availableRooms;
 
     @Given("User logged in to Bookit app as teacher role")
     public void user_logged_in_to_Bookit_app_as_teacher_role() {
@@ -37,11 +37,8 @@ SpotsPage spotsPage = new SpotsPage();
 
     @Given("User is on self page")
     public void user_is_on_self_page() {
-
         homePage.gotoSelf();
-
     }
-
 
     @Given("User logged in to Bookit app as team lead role")
     public void user_logged_in_to_Bookit_app_as_team_lead_role() {
@@ -71,7 +68,7 @@ SpotsPage spotsPage = new SpotsPage();
     @Then("User should see available rooms")
     public void user_should_see_available_rooms() {
         BrowserUtils.waitFor(2);
-        List<String> availableRooms = BrowserUtils.getElementsText(spotsPage.roomsName);
+        availableRooms = BrowserUtils.getElementsText(spotsPage.roomsName);
         System.out.println("availableRooms = " + availableRooms);
         assertEquals(7, availableRooms.size());
     }

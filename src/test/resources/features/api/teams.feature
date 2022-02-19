@@ -1,4 +1,4 @@
-@teams @db
+@teams @db @Smoke
 Feature: Team module verifications
 
   Scenario Outline: 2 Point Team info verification. API and Database

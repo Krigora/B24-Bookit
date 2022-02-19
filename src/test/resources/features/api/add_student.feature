@@ -1,4 +1,4 @@
-
+@Smoke
 Feature: Add new student
 
   @Add_Student

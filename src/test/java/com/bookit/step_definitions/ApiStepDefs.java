@@ -19,6 +19,7 @@ import com.bookit.utilities.BookItApiUtil;
 import com.bookit.utilities.Environment;
 import io.restassured.http.ContentType;
 
+import java.util.List;
 import java.util.Map;
 
 public class ApiStepDefs {
@@ -26,6 +27,7 @@ public class ApiStepDefs {
     String accessToken;
     Response response;
     Map<String,String> newRecordMap;
+    List<String> apiAvailableRooms;
 
     @Given("User logged in to Bookit api as teacher role")
     public void user_logged_in_to_Bookit_api_as_teacher_role() {
@@ -149,5 +151,55 @@ newRecordMap = newEntryInfo; //assing the query map to newRecordMap
         assertThat(dbNewTeamMap.get("id"), equalTo((long)newTeamID));
         assertThat(dbNewTeamMap.get("name"), equalTo(newRecordMap.get("team-name")));
         assertThat(dbNewTeamMap.get("batch_number").toString(), equalTo(newRecordMap.get("batch-number")));
+    }
+
+    @And("User logged in to Bookit api as team lead role")
+    public void userLoggedInToBookitApiAsTeamLeadRole() {
+        accessToken = BookItApiUtil.getAccessToken(Environment.LEADER_EMAIL, Environment.LEADER_PASSWORD);
+        System.out.println("Team lead email = " + Environment.LEADER_EMAIL);
+        System.out.println("Team lead password = " + Environment.LEADER_PASSWORD);
+
+    }
+
+    @And("User sends GET request to {string} with:")
+    public void userSendsGETRequestToWith(String endpoint, Map<String, String> queryParams) {
+response = given().accept(ContentType.JSON)
+        .and().header("Authorization", accessToken)
+        .and().queryParams(queryParams)
+        .when().get(Environment.BASE_URL + endpoint);
+    }
+
+    @And("available rooms in response should match UI results")
+    public void availableRoomsInResponseShouldMatchUIResults() {
+response.prettyPrint();
+//[mit, harvard, yale, princeton, stanford, duke, berkeley]
+        JsonPath json = response.jsonPath();
+        apiAvailableRooms = json.getList("name");
+        System.out.println("roomsList = " + apiAvailableRooms);
+        System.out.println("UI rooms = " + UIStepDefs.availableRooms);
+
+        assertThat(UIStepDefs.availableRooms, equalTo(json.getList("name")));
+        assertThat(UIStepDefs.availableRooms, equalTo(response.jsonPath().getList("name")));
+    }
+
+    @And("available rooms in database should match UI and API results")
+    public void availableRoomsInDatabaseShouldMatchUIAndAPIResults() {
+        String query = "select room.name from room inner join cluster on room.cluster.id = cluster.id where cluster.name =  'light-side'";
+       List<Object> dbAvailableRooms =  DBUtils.getColumnData(query, "name");
+        System.out.println("dbAvailableRooms = " + dbAvailableRooms);
+
+        // available rooms in database should match UI and API results
+        assertThat(dbAvailableRooms, allOf( equalTo(apiAvailableRooms), equalTo(UIStepDefs.availableRooms) ) );
+    }
+
+    @And("User deletes previously created team")
+    public void userDeletesPreviouslyCreatedTeam() {
+//create ID newly created team
+        int teamId = response.path(("entryiId"));
+        given().accept(ContentType.JSON).log().all()
+                .and().header("Authorization", accessToken)
+                .when().delete(Environment.BASE_URL+ "/api/teams/" + teamId)
+                .then().assertThat().statusCode(200);
+
     }
 }

@@ -1,3 +1,4 @@
+@Smoke
 Feature: BookIt API login verifications
 
   Scenario: verify login with valid credentials
