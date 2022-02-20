@@ -9,8 +9,11 @@ import io.cucumber.java.en.Given;
 import io.cucumber.java.en.Then;
 import io.cucumber.java.en.When;
 import io.restassured.http.ContentType;
+import io.restassured.module.jsv.JsonSchemaValidator;
 import io.restassured.path.json.JsonPath;
 import io.restassured.response.Response;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.junit.Assert;
 
 import java.util.List;
@@ -29,6 +32,7 @@ public class ApiStepDefs {
     Response response;
     Map<String, String> newRecordMap;
     List<String> apiAvailableRooms;
+    public static final Logger LOG = LogManager.getLogger();
 
     @Given("User logged in to Bookit api as teacher role")
     public void user_logged_in_to_Bookit_api_as_teacher_role() {
@@ -205,6 +209,13 @@ public class ApiStepDefs {
                 .when().delete(Environment.BASE_URL + "/api/teams/" + teamId)
                 .then().assertThat().statusCode(200);
 
+    }
+
+
+    @And("response should match {string} schema")
+    public void responseShouldMatchSchema(String jsonSchema) {
+        LOG.info("Perfoming json schema validation for " + response.asString());
+        response.then().assertThat().body(JsonSchemaValidator.matchesJsonSchemaInClasspath(jsonSchema));
     }
 }
 
