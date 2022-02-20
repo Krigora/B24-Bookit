@@ -1,8 +1,9 @@
 package com.bookit.step_definitions;
 
 import com.bookit.pages.SelfPage;
-import com.bookit.utilities.*;
-import com.sun.javafx.collections.MappingChange;
+import com.bookit.utilities.BookItApiUtil;
+import com.bookit.utilities.DBUtils;
+import com.bookit.utilities.Environment;
 import io.cucumber.java.en.And;
 import io.cucumber.java.en.Given;
 import io.cucumber.java.en.Then;
@@ -10,14 +11,14 @@ import io.cucumber.java.en.When;
 import io.restassured.http.ContentType;
 import io.restassured.path.json.JsonPath;
 import io.restassured.response.Response;
+import org.junit.Assert;
+
+import java.util.List;
+import java.util.Map;
 
 import static io.restassured.RestAssured.*;
 import static org.hamcrest.Matchers.*;
 import static org.hamcrest.MatcherAssert.*;
-
-import com.bookit.utilities.BookItApiUtil;
-import com.bookit.utilities.Environment;
-import io.restassured.http.ContentType;
 
 import java.util.List;
 import java.util.Map;
@@ -26,7 +27,7 @@ public class ApiStepDefs {
 
     String accessToken;
     Response response;
-    Map<String,String> newRecordMap;
+    Map<String, String> newRecordMap;
     List<String> apiAvailableRooms;
 
     @Given("User logged in to Bookit api as teacher role")
@@ -68,7 +69,7 @@ public class ApiStepDefs {
     }
 
     /**
-     "entryiId": 1766,
+     * "entryiId": 1766,
      * "entryType": "Student",
      * "message": "user harold finch has been added to database."
      */
@@ -93,7 +94,7 @@ public class ApiStepDefs {
 
     @When("Users sends POST request to {string} with following info:")
     public void usersSendsPOSTRequestToWithFollowingInfo(String endpoint, Map<String, String> newEntryInfo) {
-newRecordMap = newEntryInfo; //assing the query map to newRecordMap
+        newRecordMap = newEntryInfo; //assing the query map to newRecordMap
         response = given().accept(ContentType.JSON)
                 .and().header("Authorization", accessToken)
                 .and().queryParams(newEntryInfo).log().all()
@@ -108,7 +109,7 @@ newRecordMap = newEntryInfo; //assing the query map to newRecordMap
         int studentId = response.path(("entryiId"));
         given().accept(ContentType.JSON).log().all()
                 .and().header("Authorization", accessToken)
-                .when().delete(Environment.BASE_URL+ "/api/students/" + studentId)
+                .when().delete(Environment.BASE_URL + "/api/students/" + studentId)
                 .then().assertThat().statusCode(204);
 
     }
@@ -126,14 +127,14 @@ newRecordMap = newEntryInfo; //assing the query map to newRecordMap
     public void teamNameShouldBeInResponse(String expTeamName) {
         response.prettyPrint();
         assertThat(response.path("name"), equalTo(expTeamName));
-        
+
     }
 
     @And("Database query  should have samewith {string} and {string}")
     public void databaseQueryShouldHaveSamewithAnd(String teamId, String teamName) {
         String sql = "SELECT id, name FROM team WHERE id =" + teamId;
 
-        Map<String, Object> dbTeamInfo =   DBUtils.getRowMap(sql);
+        Map<String, Object> dbTeamInfo = DBUtils.getRowMap(sql);
         assertThat(dbTeamInfo.get("id"), equalTo(Long.parseLong(teamId)));
         assertThat(dbTeamInfo.get("name"), equalTo(teamName));
     }
@@ -148,7 +149,7 @@ newRecordMap = newEntryInfo; //assing the query map to newRecordMap
         System.out.println("sql = " + sql);
         System.out.println("dbNewTeamMap = " + dbNewTeamMap);
 
-        assertThat(dbNewTeamMap.get("id"), equalTo((long)newTeamID));
+        assertThat(dbNewTeamMap.get("id"), equalTo((long) newTeamID));
         assertThat(dbNewTeamMap.get("name"), equalTo(newRecordMap.get("team-name")));
         assertThat(dbNewTeamMap.get("batch_number").toString(), equalTo(newRecordMap.get("batch-number")));
     }
@@ -163,15 +164,15 @@ newRecordMap = newEntryInfo; //assing the query map to newRecordMap
 
     @And("User sends GET request to {string} with:")
     public void userSendsGETRequestToWith(String endpoint, Map<String, String> queryParams) {
-response = given().accept(ContentType.JSON)
-        .and().header("Authorization", accessToken)
-        .and().queryParams(queryParams)
-        .when().get(Environment.BASE_URL + endpoint);
+        response = given().accept(ContentType.JSON)
+                .and().header("Authorization", accessToken)
+                .and().queryParams(queryParams)
+                .when().get(Environment.BASE_URL + endpoint);
     }
 
     @And("available rooms in response should match UI results")
     public void availableRoomsInResponseShouldMatchUIResults() {
-response.prettyPrint();
+        response.prettyPrint();
 //[mit, harvard, yale, princeton, stanford, duke, berkeley]
         JsonPath json = response.jsonPath();
         apiAvailableRooms = json.getList("name");
@@ -182,15 +183,18 @@ response.prettyPrint();
         assertThat(UIStepDefs.availableRooms, equalTo(response.jsonPath().getList("name")));
     }
 
-    @And("available rooms in database should match UI and API results")
+
+    @And("available rooms in  database should match UI and API results")
     public void availableRoomsInDatabaseShouldMatchUIAndAPIResults() {
-        String query = "select room.name from room inner join cluster on room.cluster.id = cluster.id where cluster.name =  'light-side'";
-       List<Object> dbAvailableRooms =  DBUtils.getColumnData(query, "name");
+        String query = "select room.name from room inner join cluster on room.cluster_id = cluster.id where cluster.name='light-side'";
+        List<Object> dbAvailableRooms = DBUtils.getColumnData(query, "name");
         System.out.println("dbAvailableRooms = " + dbAvailableRooms);
 
         // available rooms in database should match UI and API results
-        assertThat(dbAvailableRooms, allOf( equalTo(apiAvailableRooms), equalTo(UIStepDefs.availableRooms) ) );
+        assertThat(dbAvailableRooms, allOf(equalTo(apiAvailableRooms), equalTo(UIStepDefs.availableRooms)));
     }
+
+
 
     @And("User deletes previously created team")
     public void userDeletesPreviouslyCreatedTeam() {
@@ -198,8 +202,16 @@ response.prettyPrint();
         int teamId = response.path(("entryiId"));
         given().accept(ContentType.JSON).log().all()
                 .and().header("Authorization", accessToken)
-                .when().delete(Environment.BASE_URL+ "/api/teams/" + teamId)
+                .when().delete(Environment.BASE_URL + "/api/teams/" + teamId)
                 .then().assertThat().statusCode(200);
 
     }
 }
+
+
+
+
+
+
+
+

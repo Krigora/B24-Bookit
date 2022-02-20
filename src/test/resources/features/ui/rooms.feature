@@ -1,4 +1,4 @@
-@ui @rooms @db
+@ui @rooms @db @Smoke
   Feature: Verify room reservation functionality
 
     Scenario: Team lead should be able to see the available rooms
